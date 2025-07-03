@@ -17,19 +17,24 @@ static struct xor_device xor_dev;
 /* Inicialización del mutex para sincronización */
 static DEFINE_MUTEX(xor_mutex);
 
+/* Evita acceso concurrente y retorna -EBUSY si ya está en uso por otro proceso*/
 static int dev_open(struct inode *inode, struct file *file) {
     struct xor_device *dev = container_of(inode->i_cdev, struct xor_device, cdev);
     file->private_data = dev;
-    if (!mutex_trylock(&dev->lock)) return -EBUSY;
+    if (!mutex_trylock(&dev->lock)) {
+        return -EBUSY;
+    }
     return 0;
 }
 
+/* Libera mutex para permitir acceso de otros procesos */
 static int dev_release(struct inode *inode, struct file *file) {
     struct xor_device *dev = file->private_data;
     mutex_unlock(&dev->lock);
     return 0;
 }
 
+/* función de escritura */
 static ssize_t dev_write(struct file *file, const char __user *user_buf, size_t len, loff_t *off) {
     size_t i;
     struct xor_device *dev = &xor_dev;
@@ -44,6 +49,7 @@ static ssize_t dev_write(struct file *file, const char __user *user_buf, size_t 
     return len;
 }
 
+/*función de lectura*/
 static ssize_t dev_read(struct file *file, char __user *user_buf, size_t len, loff_t *off) {
     size_t to_copy;
     char temp[MAX_SIZE];
@@ -63,10 +69,12 @@ static ssize_t dev_read(struct file *file, char __user *user_buf, size_t len, lo
     return to_copy;
 }
 
+
 static long dev_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
     char new_key;
     struct xor_device *dev = &xor_dev;
-    
+
+    /*Verifica que cmd sea igual a la llave establecida*/ 
     if (cmd == IOCTL_SET_KEY) {
         if (copy_from_user(&new_key, (char __user *)arg, sizeof(char))) return -EFAULT;
         dev->xor_key = new_key;
