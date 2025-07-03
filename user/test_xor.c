@@ -11,34 +11,34 @@
 int main() {
     int fd = open(DEVICE, O_RDWR);
     if (fd < 0) {
-        perror("Failed to open device");
+        perror("Error al abrir el dispositivo");
         return 1;
     }
 
-    // Set XOR key
+    // Llave XOR
     char key = 'Z';
     if (ioctl(fd, IOCTL_SET_KEY, &key) < 0) {
-        perror("Failed to set key");
+        perror("Error al establecer la llave");
         close(fd);
         return 1;
     }
-    printf("Key set to '%c'\n", key);
+    printf("Llave establecida en '%c'\n", key);
 
-    // Write message
-    const char *msg = "HelloSecureWorld!";
+    // Write
+    const char *msg = "HolaMundoSeguro!";
     write(fd, msg, strlen(msg));
-    printf("Encrypted and wrote: %s\n", msg);
+    printf("Mensaje cifrado y escrito: %s\n", msg);
 
-    // Reset file offset
+    // Reiniciar posición del archivo
     lseek(fd, 0, SEEK_SET);
 
-    // Read message back
+    // Read
     char buf[256] = {0};
     ssize_t bytes = read(fd, buf, sizeof(buf));
     if (bytes < 0) {
-        perror("Read failed");
+        perror("Error al leer");
     } else {
-        printf("Decrypted and read: %s\n", buf);
+        printf("Mensaje descifrado: %s\n", buf);
     }
 
     close(fd);
